@@ -318,6 +318,10 @@ footer {
 	flex: 1;
 	transition: all 0.2s;
 }
+.todo-item.completed .todo-item-text {
+	color: var(--gray);
+	text-decoration: line-through;
+}
 
 .btn-delete {
 	color: var(--gray);
