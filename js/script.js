@@ -2,6 +2,9 @@
 const taskInput = document.getElementById("task-input");
 const addTaskBtn = document.getElementById("add-task");
 const todosList = document.getElementById("todos-list");
+const itemsAll = document.getElementById("items-all");
+const itemsActive = document.getElementById("items-active");
+const itemsCompleted = document.getElementById("items-completed");
 const itemsLeft = document.getElementById("items-left");
 const clearCompletedBtn = document.getElementById("clear-completed");
 const emptyState = document.querySelector(".empty-state");
@@ -44,10 +47,18 @@ function saveTodos() {
 }
 
 function updateItemsCount() { 
-    const uncompletedTodos = todos.filter((todo) => !todo.completed); 
+    const allCount = todos.length;
+    const activeCount = todos.filter((todo) => !todo.completed).length;
+    const completedCount = todos.filter((todo) => todo.completed).length;
 
-    itemsLeft.textContent = `${uncompletedTodos?.length} item${
-        uncompletedTodos?.length !== 1 ? "s" : ""
+     // Update individual filter bubble counts
+    if (itemsAll) itemsAll.textContent = allCount > 0 ? allCount : "";
+    if (itemsActive) itemsActive.textContent = activeCount > 0 ? activeCount : "";
+    if (itemsCompleted) itemsCompleted.textContent = completedCount > 0 ? completedCount : "";
+
+    // Update footer summary text (items left)
+    itemsLeft.textContent = `${activeCount} item${
+        activeCount !== 1 ? "s" : ""
     } left`;
 }
 
@@ -68,45 +79,98 @@ function filterTodos(filter) {
     }
 }
 
+function getTaskDateGroup(id) {
+    // Convert the numeric ID timestamp into a JavaScript Date object
+    const taskDate = new Date(id);
+    const now = new Date();
+    
+    // Set boundaries to the beginning of the respective time periods
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfThisWeek = new Date(startOfToday);
+    startOfThisWeek.setDate(startOfToday.getDate() - startOfToday.getDay()); // Sunday
+    
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Grouping conditions
+    if (taskDate >= startOfToday) {
+        return "today";
+    } else if (taskDate >= startOfThisWeek) {
+        return "thisWeek";
+    } else if (taskDate >= startOfThisMonth) {
+        return "thisMonth";
+    } else {
+        return "older";
+    }
+}
+
 function renderTodos() {
     todosList.innerHTML = "";
 
     const filteredTodos = filterTodos(currentFilter);
 
+    // 1. Group tasks into date buckets
+    const groups = {
+        today: { title: "Today", items: [] },
+        thisWeek: { title: "This Week", items: [] },
+        thisMonth: { title: "This Month", items: [] },
+        older: { title: "Older than a Month", items: [] }
+    };
+
     filteredTodos.forEach((todo) => {
-        const todoItem = document.createElement("li");
-        todoItem.classList.add("todo-item");
-        if (todo.completed) todoItem.classList.add("completed");
+        const groupKey = getTaskDateGroup(todo.id);
+        groups[groupKey].items.push(todo);
+    });
 
-        const checkboxContainer = document.createElement("label");
-        checkboxContainer.classList.add("checkbox-container");
+    // 2. Render each group if it has items
+    Object.keys(groups).forEach((key) => {
+        const group = groups[key];
+        if (group.items.length === 0) return; // Skip empty groups
 
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.classList.add("todo-checkbox");
-        checkbox.checked = todo.completed;
-        checkbox.addEventListener("change", () => toggleTodo(todo.id));
+        // Create and append a group section header
+        const header = document.createElement("h3");
+        header.classList.add("todo-group-header");
+        header.textContent = group.title;
+        todosList.appendChild(header);
 
-        const checkmark = document.createElement("span");
-        checkmark.classList.add("checkmark");
+        // Sort completed to the bottom of each group
+        group.items.sort((a, b) => a.completed - b.completed);
 
-        checkboxContainer.appendChild(checkbox);
-        checkboxContainer.appendChild(checkmark);
+        // Render the sorted tasks inside this specific group
+        group.items.forEach((todo) => {
+            const todoItem = document.createElement("li");
+            todoItem.classList.add("todo-item");
+            if (todo.completed) todoItem.classList.add("completed");
 
-        const todoText = document.createElement("span");
-        todoText.classList.add("todo-item-text");
-        todoText.textContent = todo.text;
+            const checkboxContainer = document.createElement("label");
+            checkboxContainer.classList.add("checkbox-container");
 
-        const deleteBtn = document.createElement("button");
-        deleteBtn.classList.add("btn", "btn-delete");
-        deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
-        deleteBtn.addEventListener("click", () => deleteTodo(todo.id));
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.classList.add("todo-checkbox");
+            checkbox.checked = todo.completed;
+            checkbox.addEventListener("change", () => toggleTodo(todo.id));
 
-        todoItem.appendChild(checkboxContainer);
-        todoItem.appendChild(todoText);
-        todoItem.appendChild(deleteBtn);
+            const checkmark = document.createElement("span");
+            checkmark.classList.add("checkmark");
 
-        todosList.appendChild(todoItem);
+            checkboxContainer.appendChild(checkbox);
+            checkboxContainer.appendChild(checkmark);
+
+            const todoText = document.createElement("span");
+            todoText.classList.add("todo-item-text");
+            todoText.textContent = todo.text;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.classList.add("btn", "btn-delete");
+            deleteBtn.innerHTML = '<i class="fas fa-times"></i>';
+            deleteBtn.addEventListener("click", () => deleteTodo(todo.id));
+
+            todoItem.appendChild(checkboxContainer);
+            todoItem.appendChild(todoText);
+            todoItem.appendChild(deleteBtn);
+
+            todosList.appendChild(todoItem);
+        });
     });
 }
 

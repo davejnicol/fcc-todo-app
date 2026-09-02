@@ -242,7 +242,6 @@ footer {
 }
 .item-count {
 	font-size: var(--fs-300);
-	opacity: 0.9;
 	position: relative;
 
 	&::before {
@@ -267,6 +266,15 @@ footer {
 		overflow-y: auto;
 		max-height: 580px;
 	}
+}
+.todo-group-header {
+	background-color: var(--light);
+	color: var(--gray);
+	font-size: 0.825rem;
+	font-weight: 600;
+	margin-block: 10px 4px;
+	padding: 6px 14px;
+	text-transform: uppercase;
 }
 #todos-list {
 	list-style-type: none;
